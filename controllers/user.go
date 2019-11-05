@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Controller struct to export endpoint methods
 type Controller struct{}
 
 // Signup handles signing users up
