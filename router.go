@@ -151,7 +151,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 func protectedEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("protectedEndpoint invoked.")
+	w.WriteHeader(http.StatusOK)
+	responseJSON(w, Restricted{
+		Data: "super secret resource",
+	})
 }
 
 // TokenVerifyMiddleware validates that the bearer token is valid and grants access to protected endpoints
