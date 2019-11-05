@@ -4,23 +4,12 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
+	"github.com/subosito/gotenv"
 )
-
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"strings"
-
-// 	jwt "github.com/dgrijalva/jwt-go"
-// 	"github.com/gorilla/mux"
-// 	"github.com/lib.pq"
-// 	"golang.org/x/crypto/bcrypt"
-// )
 
 // User type for request/response body JSON
 type User struct {
@@ -41,8 +30,12 @@ type Error struct {
 
 var db *sql.DB
 
+func init() {
+	gotenv.Load()
+}
+
 func main() {
-	pgURL, err := pq.ParseURL("postgres://hbqbvsuvzkiwyv:96d4d273802750abef0437f1bfe640787b5a514afec668bd32bb0536834ad5f4@ec2-23-21-76-49.compute-1.amazonaws.com:5432/d8fn2og7m2c9ag")
+	pgURL, err := pq.ParseURL(os.Getenv("DB_URL"))
 
 	if err != nil {
 		log.Fatal(err)

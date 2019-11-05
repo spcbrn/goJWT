@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -83,7 +84,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 // GenerateToken generates a new jwt token with grant "course"
 func GenerateToken(user User) (string, error) {
 	var err error
-	secret := "secret"
+	secret := os.Getenv("SECRET")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": user.Email,
@@ -169,7 +170,7 @@ func TokenVerifyMiddleware(next http.HandlerFunc) http.HandlerFunc {
 					return nil, fmt.Errorf("there was an error")
 				}
 
-				return []byte("secret"), nil
+				return []byte(os.Getenv("SECRET")), nil
 			})
 
 			if error != nil {
