@@ -17,6 +17,7 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Restricted data type for protected endpoint
 type Restricted struct {
 	Data string `json:"data"`
 }
