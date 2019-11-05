@@ -4,29 +4,12 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
+
+	"./driver"
 
 	"github.com/gorilla/mux"
-	"github.com/lib/pq"
 	"github.com/subosito/gotenv"
 )
-
-// User type for request/response body JSON
-type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-// JWT Token type for request/response body JSON
-type JWT struct {
-	Token string `json:"token"`
-}
-
-// Error type for response body JSON
-type Error struct {
-	Message string `json:"message"`
-}
 
 var db *sql.DB
 
@@ -35,19 +18,7 @@ func init() {
 }
 
 func main() {
-	pgURL, err := pq.ParseURL(os.Getenv("DB_URL"))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db, err = sql.Open("postgres", pgURL)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = db.Ping()
+	db = driver.ConnectDB()
 
 	r := mux.NewRouter()
 

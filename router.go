@@ -9,42 +9,17 @@ import (
 	"os"
 	"strings"
 
+	"./models"
+	"./utils"
+
 	"github.com/dgrijalva/jwt-go"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-// take in error struct and status code and send to client
-func respondWithError(w http.ResponseWriter, status int, error Error) {
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(error)
-}
-
-// check that the incoming request body for signup/login has both a valid email and a password
-// if not, send appropriate error response
-func verifyReqUserData(w http.ResponseWriter, user User, error Error) string {
-	if user.Email == "" {
-		error.Message = "Email is missing."
-		respondWithError(w, http.StatusBadRequest, error)
-		return error.Message
-	}
-	if user.Password == "" {
-		error.Message = "Password is missing."
-		respondWithError(w, http.StatusBadRequest, error)
-		return error.Message
-	}
-
-	return ""
-}
-
-// take passed in interface object and send as response in JSON
-func responseJSON(w http.ResponseWriter, data interface{}) {
-	json.NewEncoder(w).Encode(data)
-}
-
 func signup(w http.ResponseWriter, r *http.Request) {
-	var user User
-	var error Error
+	var user models.User
+	var error models.Error
 
 	// decode user property off of request body
 	// by passing in the address to our user type object the fields will be populated
@@ -52,7 +27,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&user)
 
 	// check that both email and password fields have content
-	msg := verifyReqUserData(w, user, error)
+	msg := utils.VerifyReqUserData(w, user, error)
 	if msg != "" {
 		return
 	}
@@ -71,18 +46,18 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	// if query fails return server error
 	if err != nil {
 		error.Message = "Server error."
-		respondWithError(w, http.StatusInternalServerError, error)
+		utils.RespondWithError(w, http.StatusInternalServerError, error)
 		return
 	}
 
 	// if successful return user object with id
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
-	responseJSON(w, user)
+	utils.ResponseJSON(w, user)
 }
 
 // GenerateToken generates a new jwt token with grant "course"
-func GenerateToken(user User) (string, error) {
+func GenerateToken(user models.User) (string, error) {
 	var err error
 	secret := os.Getenv("SECRET")
 
@@ -101,13 +76,13 @@ func GenerateToken(user User) (string, error) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	var user User
-	var jwt JWT
-	var error Error
+	var user models.User
+	var jwt models.JWT
+	var error models.Error
 
 	json.NewDecoder(r.Body).Decode(&user)
 
-	msg := verifyReqUserData(w, user, error)
+	msg := utils.VerifyReqUserData(w, user, error)
 	if msg != "" {
 		return
 	}
@@ -122,7 +97,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			error.Message = "The user does not exist"
-			respondWithError(w, http.StatusBadRequest, error)
+			utils.RespondWithError(w, http.StatusBadRequest, error)
 			return
 		}
 		log.Fatal(err)
@@ -135,7 +110,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPswd), []byte(pswd))
 	if err != nil {
 		error.Message = "The provided password is invalid."
-		respondWithError(w, http.StatusUnauthorized, error)
+		utils.RespondWithError(w, http.StatusUnauthorized, error)
 		return
 	}
 
@@ -148,17 +123,20 @@ func login(w http.ResponseWriter, r *http.Request) {
 	// return newly generated token to client
 	w.WriteHeader(http.StatusOK)
 	jwt.Token = token
-	responseJSON(w, jwt)
+	utils.ResponseJSON(w, jwt)
 }
 
 func protectedEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("protectedEndpoint invoked.")
+	w.WriteHeader(http.StatusOK)
+	utils.ResponseJSON(w, models.Protected{
+		Data: "Here is your super secret resource.",
+	})
 }
 
 // TokenVerifyMiddleware validates that the bearer token is valid and grants access to protected endpoints
 func TokenVerifyMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var errorObject Error
+		var errorObject models.Error
 		authHeader := r.Header.Get("Authorization")
 		bearerToken := strings.Split(authHeader, " ")
 
@@ -175,7 +153,7 @@ func TokenVerifyMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 			if error != nil {
 				errorObject.Message = error.Error()
-				respondWithError(w, http.StatusUnauthorized, errorObject)
+				utils.RespondWithError(w, http.StatusUnauthorized, errorObject)
 				return
 			}
 
@@ -183,12 +161,12 @@ func TokenVerifyMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				next.ServeHTTP(w, r)
 			} else {
 				errorObject.Message = error.Error()
-				respondWithError(w, http.StatusUnauthorized, errorObject)
+				utils.RespondWithError(w, http.StatusUnauthorized, errorObject)
 				return
 			}
 		} else {
 			errorObject.Message = "Invalid token."
-			respondWithError(w, http.StatusUnauthorized, errorObject)
+			utils.RespondWithError(w, http.StatusUnauthorized, errorObject)
 			return
 		}
 
