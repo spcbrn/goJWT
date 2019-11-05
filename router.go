@@ -33,7 +33,7 @@ func verifyReqUserData(w http.ResponseWriter, user User, error Error) string {
 		return error.Message
 	}
 
-	return error.Message
+	return ""
 }
 
 // take passed in interface object and send as response in JSON
